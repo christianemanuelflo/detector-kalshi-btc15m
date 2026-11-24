@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- La app está diseñada en modo oscuro (pedido explícito) -->
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b0e13" />
+    <!-- Metas para instalarla como app en iPhone (Añadir a pantalla de inicio) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Kalshi BTC 15m" />
+    <link rel="manifest" href="data:application/json;base64,eyJiYWNrZ3JvdW5kX2NvbG9yIjoiIzBiMGUxMyIsImRlc2NyaXB0aW9uIjoiRGV0ZWN0b3IgZGUgc2XDsWFsZXMgcGFyYSBlbCBtZXJjYWRvIEJUQyBVcCBvciBEb3duIGRlIDE1IG1pbnV0b3MgZGUgS2Fsc2hpIChLWEJUQzE1TSkuIFNvbG8gaW5mb3JtYXRpdm86IG5vIG9wZXJhLiIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwibGFuZyI6ImVzIiwibmFtZSI6IkRldGVjdG9yIEthbHNoaSBCVEMgMTVtIiwib3JpZW50YXRpb24iOiJwb3J0cmFpdCIsInNjb3BlIjoiLi4vIiwic2hvcnRfbmFtZSI6IkthbHNoaSBCVEMgMTVtIiwic3RhcnRfdXJsIjoiLi4vaW5kZXguaHRtbCIsInRoZW1lX2NvbG9yIjoiIzBiMGUxMyJ9" />
+    <link rel="icon" href="data:," />
+    <title>Detector Kalshi BTC 15m</title>
+    <style>
+      /* ============ Tema (oscuro, textos grandes, pensado para iPhone) ============ */
+      :root{
+        --bg:#0b0e13; --panel:#131922; --panel2:#0f141c; --line:#232d3a;
+        --txt:#e9eef4; --muted:#8d9aa9; --faint:#5d6b7a;
+        --up:#2bd97c; --down:#ff5d5d; --amber:#f5b544; --blue:#4da3ff;
+        --up-dim:rgba(43,217,124,.14); --down-dim:rgba(255,93,93,.14);
+        --radius:14px;
+      }
+      *{ box-sizing:border-box; }
+      html{ -webkit-text-size-adjust:100%; }
+      body{
+        margin:0; background:var(--bg); color:var(--txt);
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+        padding:14px 14px 40px; max-width:600px; margin-inline:auto;
+      }
+      .num{ font-variant-numeric:tabular-nums; font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
+      h2{ font-size:17px; margin:0 0 10px; letter-spacing:.02em; }
+      section.card{
+        background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+        padding:16px; margin-bottom:14px;
+      }
+      button, select, input[type="range"]{ min-height:36px; }
+      button{
+        font:inherit; font-weight:600; color:var(--txt); background:#1c2634;
+        border:1px solid var(--line); border-radius:10px; padding:8px 14px; cursor:pointer;
+      }
+      button:active{ transform:scale(.98); }
+
+      /* ============ Barra de estado de conexión ============ */
+      .statusbar{ display:flex; align-items:center; gap:8px; font-size:14px; color:var(--muted); margin-bottom:12px; }
+      .dot{ width:10px; height:10px; border-radius:50%; background:var(--faint); flex:none; }
+      .dot.live{ background:var(--up); box-shadow:0 0 8px var(--up); }
+      .dot.warn{ background:var(--amber); }
+      .statusbar .spacer{ flex:1; }
+
+      /* ============ Ventana de 15 minutos ============ */
+      .win-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+      .win-timer{ font-size:46px; font-weight:800; line-height:1; }
+      .win-range{ color:var(--muted); font-size:14px; }
+      .phase{
+        display:inline-block; margin-top:10px; font-size:14px; font-weight:700;
+        padding:6px 12px; border-radius:999px; background:#1c2634; color:var(--muted);
+      }
+      .phase.main{ background:var(--up-dim); color:var(--up); }
+      .phase.noise{ background:rgba(245,181,68,.15); color:var(--amber); }
+      .progress{ height:8px; background:#1c2634; border-radius:99px; margin-top:12px; overflow:hidden; }
+      .progress > div{ height:100%; background:var(--blue); width:0%; transition:width .5s linear; }
+
+      /* ============ Precio / strike ============ */
+      .price-big{ font-size:42px; font-weight:800; line-height:1.05; }
+      .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+      .stat{ background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+      .stat .lbl{ font-size:12.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+      .stat .val{ font-size:21px; font-weight:700; margin-top:2px; }
+      .pos{ color:var(--up); } .neg{ color:var(--down); }
+
+      /* ============ Medidor de señal ============ */
+      .signal-card{ text-align:center; }
+      .arrow{ font-size:72px; line-height:1; font-weight:900; }
+      .arrow.up{ color:var(--up); } .arrow.down{ color:var(--down); } .arrow.neu{ color:var(--faint); }
+      .dir-label{ font-size:30px; font-weight:800; letter-spacing:.04em; }
+      .strength-num{ font-size:20px; color:var(--muted); margin-top:4px; }
+      .strength-num b{ color:var(--txt); font-size:26px; }
+      .meter{ height:16px; background:#1c2634; border-radius:99px; overflow:hidden; margin:14px 4px 4px; position:relative; }
+      .meter > div{ height:100%; width:0%; background:var(--faint); transition:width .4s ease, background .3s; }
+      .meter > div.up{ background:var(--up); } .meter > div.down{ background:var(--down); }
+      .meter .thr{ position:absolute; top:0; bottom:0; width:2px; background:var(--amber); }
+      .signal-note{ font-size:15px; color:var(--muted); margin-top:8px; min-height:20px; }
+      .exit-alert{
+        display:none; margin-top:12px; background:rgba(255,93,93,.16); color:#ffb3b3;
+        border:1px solid var(--down); border-radius:10px; padding:12px; font-weight:700; font-size:16px;
+      }
+      .exit-alert.show{ display:block; }
+
+      /* ============ Heatmap manual ============ */
+      .seg{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+      .seg button{ font-size:16px; padding:12px 6px; }
+      .seg button.on-up{ background:var(--up-dim); border-color:var(--up); color:var(--up); }
+      .seg button.on-neu{ background:#2a3646; border-color:var(--muted); }
+      .seg button.on-down{ background:var(--down-dim); border-color:var(--down); color:var(--down); }
+      .hint{ font-size:13.5px; color:var(--muted); margin-top:8px; }
+
+      /* ============ Desglose de señales ============ */
+      .sig-row{ padding:9px 0; border-bottom:1px solid var(--line); }
+      .sig-row:last-child{ border-bottom:none; }
+      .sig-top{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+      .sig-name{ font-size:15.5px; font-weight:600; }
+      .sig-val{ font-size:16px; font-weight:700; }
+      .sig-bar{ position:relative; height:10px; background:#1c2634; border-radius:99px; margin-top:6px; }
+      .sig-bar .zero{ position:absolute; left:50%; top:-2px; bottom:-2px; width:1px; background:var(--faint); }
+      .sig-bar .fill{ position:absolute; top:0; bottom:0; border-radius:99px; background:var(--faint); }
+      .sig-bar .fill.p{ background:var(--up); } .sig-bar .fill.n{ background:var(--down); }
+      .sig-detail{ font-size:13px; color:var(--muted); margin-top:4px; }
+
+      /* ============ Historial y estadísticas ============ */
+      .hist-row{
+        display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); font-size:15px;
+      }
+      .hist-row:last-child{ border-bottom:none; }
+      .hist-time{ color:var(--muted); font-size:13.5px; min-width:86px; }
+      .badge{ font-weight:800; font-size:13px; padding:4px 9px; border-radius:999px; background:#1c2634; }
+      .badge.up{ background:var(--up-dim); color:var(--up); }
+      .badge.down{ background:var(--down-dim); color:var(--down); }
+      .badge.none{ color:var(--faint); }
+      .hit{ margin-left:auto; font-weight:800; }
+      .hit.ok{ color:var(--up); } .hit.bad{ color:var(--down); } .hit.na{ color:var(--faint); }
+      table.stats{ width:100%; border-collapse:collapse; font-size:15px; }
+      table.stats th, table.stats td{ text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); }
+      table.stats th{ color:var(--muted); font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.05em; }
+      table.stats td:last-child, table.stats th:last-child{ text-align:right; }
+      .empty{ color:var(--faint); font-size:14.5px; padding:6px 0; }
+
+      /* ============ Ajustes ============ */
+      .ctl{ margin:12px 0; }
+      .ctl label{ display:flex; justify-content:space-between; font-size:15px; font-weight:600; margin-bottom:4px; }
+      .ctl label output{ color:var(--amber); font-weight:700; }
+      input[type="range"]{ width:100%; accent-color:var(--blue); }
+      .toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:15.5px; }
+      .toggle-row:last-child{ border-bottom:none; }
+      .switch{ position:relative; width:52px; height:32px; flex:none; }
+      .switch input{ position:absolute; inset:0; opacity:0; margin:0; cursor:pointer; }
+      .switch .track{ position:absolute; inset:0; background:#2a3646; border-radius:99px; transition:background .2s; pointer-events:none; }
+      .switch .track::after{ content:""; position:absolute; top:3px; left:3px; width:26px; height:26px; border-radius:50%; background:#fff; transition:left .2s; }
+      .switch input:checked + .track{ background:var(--up); }
+      .switch input:checked + .track::after{ left:23px; }
+      .btn-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+      .btn-row button{ flex:1; min-width:130px; }
+      .danger{ color:#ffb3b3; border-color:rgba(255,93,93,.5); }
+
+      details{ margin-top:4px; }
+      summary{ font-size:16px; font-weight:700; padding:10px 0; cursor:pointer; min-height:36px; }
+      details .body{ font-size:14.5px; line-height:1.55; color:#c6d0db; }
+      details .body li{ margin-bottom:6px; }
+      details .body code{ background:#1c2634; padding:1px 6px; border-radius:6px; font-size:13px; }
+      .disclaimer{
+        border:1px solid rgba(245,181,68,.55); background:rgba(245,181,68,.1); color:#ffd98a;
+        border-radius:10px; padding:12px 14px; font-size:15px; font-weight:600; text-align:center; margin-bottom:14px;
+      }
+      footer{ color:var(--faint); font-size:13px; text-align:center; line-height:1.6; }
+    </style>
+  </head>
+  <body>
+
+    <!-- Estado de la conexión en vivo -->
+    <div class="statusbar">
+      <span class="dot" id="connDot"></span>
+      <span id="connText">Conectando con Kraken…</span>
+      <span class="spacer"></span>
+      <span class="num" id="clockNow">--:--:--</span>
+    </div>
+
+    <!-- Aviso fijo obligatorio -->
+    <div class="disclaimer">Señal informativa; no garantiza resultados. Probar en papel antes de usar dinero real.</div>
+
+    <!-- ===== Ventana actual de 15 minutos ===== -->
+    <section class="card">
+      <div class="win-head">
+        <div>
+          <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Ventana KXBTC15M · tiempo restante</div>
+          <div class="win-timer num" id="winTimer">--:--</div>
+        </div>
+        <div class="win-range num" id="winRange">—</div>
+      </div>
+      <div class="progress"><div id="winProgress"></div></div>
+      <span class="phase" id="winPhase">Cargando…</span>
+
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">BTC / USD (Kraken)</div>
+        <div class="price-big num" id="priceNow">—</div>
+      </div>
+      <div class="grid2">
+        <div class="stat">
+          <div class="lbl">Strike · price to beat</div>
+          <div class="val num" id="strikeVal">—</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Distancia al strike</div>
+          <div class="val num" id="distVal">—</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">Distancia en ATR (1m)</div>
+          <div class="val num" id="distAtr">—</div>
+        </div>
+        <div class="stat">
+          <div class="lbl">ATR 1m · BB width</div>
+          <div class="val num" id="volVal">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Medidor de señal ===== -->
+    <section class="card signal-card">
+      <div class="arrow neu" id="dirArrow">●</div>
+      <div class="dir-label" id="dirLabel">NEUTRAL</div>
+      <div class="strength-num">Fuerza <b class="num" id="strengthNum">0</b> / 100 · umbral <span class="num" id="thrEcho">55</span></div>
+      <div class="meter"><div id="strengthFill"></div><div class="thr" id="thrMark"></div></div>
+      <div class="signal-note" id="signalNote">Esperando datos…</div>
+      <div class="exit-alert" id="exitAlert">⚠ ALERTA DE SALIDA: la señal se invirtió en los primeros 5 minutos de la ventana. Considera salir de la posición.</div>
+    </section>
+
+    <!-- ===== Heatmap de liquidaciones (manual) ===== -->
+    <section class="card">
+      <h2>Heatmap de liquidaciones (manual)</h2>
+      <div class="seg" role="group" aria-label="Dirección del heatmap">
+        <button id="hmUp" type="button">▲ Pool arriba</button>
+        <button id="hmNeu" type="button" class="on-neu">● Neutral</button>
+        <button id="hmDown" type="button">▼ Pool abajo</button>
+      </div>
+      <p class="hint">Marca dónde está el pool de liquidez más denso según tu heatmap (p. ej. CoinGlass). Si el precio se mueve hacia el pool en la misma dirección de la racha, la señal 7 suma puntos.</p>
+    </section>
+
+    <!-- ===== Desglose de señales ===== -->
+    <section class="card">
+      <h2>Desglose de señales <span style="color:var(--muted);font-weight:400;font-size:13.5px;">(cada una de −100 a +100)</span></h2>
+      <div id="breakdown"></div>
+      <div class="grid2" style="margin-top:12px;">
+        <div class="stat"><div class="lbl">Funding BTC perp (OKX)</div><div class="val num" id="ctxFunding">—</div></div>
+        <div class="stat"><div class="lbl">ETH · cambio 5 min</div><div class="val num" id="ctxEth">—</div></div>
+      </div>
+    </section>
+
+    <!-- ===== Historial de ventanas ===== -->
+    <section class="card">
+      <h2>Historial · últimas 20 ventanas</h2>
+      <div id="historyList"><div class="empty">Todavía no se cierra ninguna ventana con la app abierta. El historial se va llenando ventana a ventana.</div></div>
+    </section>
+
+    <!-- ===== Validación ===== -->
+    <section class="card">
+      <h2>Validación · tasa de acierto</h2>
+      <div id="statsBands"></div>
+      <div id="statsMinutes" style="margin-top:14px;"></div>
+      <p class="hint">Se registra la primera señal que supera el umbral dentro de la zona principal (minutos 2–10) y se compara con el resultado real de la ventana. Registros guardados: <b class="num" id="logCount">0</b></p>
+      <div class="btn-row">
+        <button id="exportCsv" type="button">Exportar CSV</button>
+        <button id="clearLog" type="button" class="danger">Borrar registro</button>
+      </div>
+    </section>
+
+    <!-- ===== Ajustes ===== -->
+    <section class="card">
+      <h2>Ajustes</h2>
+      <div class="ctl">
+        <label>Umbral de señal <output id="thrOut">55</output></label>
+        <input type="range" id="thrRange" min="30" max="90" step="1" value="55" />
+      </div>
+      <div id="weightCtls"></div>
+      <div class="toggle-row"><span>Sonido al aparecer señal fuerte</span>
+        <label class="switch"><input type="checkbox" id="sndTgl" checked /><span class="track"></span></label></div>
+      <div class="toggle-row"><span>Vibración al aparecer señal fuerte</span>
+        <label class="switch"><input type="checkbox" id="vibTgl" checked /><span class="track"></span></label></div>
+      <div class="btn-row">
+        <button id="testAlert" type="button">Probar sonido y vibración</button>
+      </div>
+      <p class="hint">En iPhone, el sonido necesita un toque previo (pulsa «Probar sonido») por las políticas de audio de Safari. La vibración solo funciona en navegadores que la soportan; Safari en iOS no vibra desde páginas web.</p>
+    </section>
+
+    <!-- ===== Instalación y guía ===== -->
+    <section class="card">
+      <h2>Instalación y guía</h2>
+      <details>
+        <summary>Alojarla gratis en GitHub Pages</summary>
+        <div class="body">
+          <ol>
+            <li>Crea una cuenta en <b>github.com</b> si no tienes una.</li>
+            <li>Crea un repositorio nuevo, por ejemplo <code>detector-kalshi</code> (público).</li>
+            <li>Sube este archivo con el nombre <code>index.html</code> (botón «Add file → Upload files»). Si quieres el manifiesto de app, sube también la carpeta <code>assets</code> tal cual.</li>
+            <li>En el repositorio: <b>Settings → Pages</b> → en «Build and deployment» elige <b>Deploy from a branch</b>, rama <code>main</code>, carpeta <code>/ (root)</code> y guarda.</li>
+            <li>En 1–2 minutos tu app queda en <code>https://tu-usuario.github.io/detector-kalshi/</code></li>
+          </ol>
+        </div>
+      </details>
+      <details>
+        <summary>Añadirla al iPhone (pantalla de inicio)</summary>
+        <div class="body">
+          <ol>
+            <li>Abre la URL de GitHub Pages en <b>Safari</b> (debe ser Safari, no Chrome).</li>
+            <li>Toca el botón <b>Compartir</b> (cuadrado con flecha hacia arriba).</li>
+            <li>Elige <b>«Añadir a pantalla de inicio»</b> y confirma con «Añadir».</li>
+            <li>La app se abre a pantalla completa, sin barra de Safari, como una app nativa.</li>
+            <li>Nota: el registro (localStorage) se guarda en el dispositivo donde la uses; expórtalo en CSV con regularidad como respaldo.</li>
+          </ol>
+        </div>
+      </details>
+      <details>
+        <summary>Parámetros que puedes ajustar</summary>
+        <div class="body">
+          <ul>
+            <li><b>Umbral de señal</b> (30–90, defecto 55): fuerza mínima para mostrar UP/DOWN y registrar la señal.</li>
+            <li><b>Peso de cada señal</b> (0–3): en Ajustes, un deslizador por señal. Peso 0 la apaga.</li>
+            <li><b>Dirección del heatmap</b>: arriba / neutral / abajo (entrada manual, señal 7).</li>
+            <li><b>Sonido y vibración</b>: interruptores en Ajustes.</li>
+            <li>En el código (bloque <code>CONFIG</code>): ventana de flujo de órdenes (90 s), niveles del libro (10), periodo de ATR (14) y de Bollinger (20, 2σ), y el multiplicador de baja volatilidad (0.65).</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary>Cómo funciona cada señal</summary>
+        <div class="body">
+          <ul>
+            <li><b>1 · Desplazamiento vs strike:</b> (precio − strike) ÷ ATR esperado en el tiempo que queda. Es la señal reina: Kalshi paga por cerrar sobre el strike, no por el color de la vela.</li>
+            <li><b>2 · Momentum multi-plazo:</b> retornos de 1, 3 y 5 min normalizados por ATR + pendiente EMA 9/21.</li>
+            <li><b>3 · Rachas:</b> velas de 1m consecutivas del mismo color; si alternan (choppy), la señal se castiga.</li>
+            <li><b>4 · Flujo de órdenes:</b> desequilibrio compras/ventas de los trades reales de los últimos 90 s.</li>
+            <li><b>5 · Order book:</b> desequilibrio bid/ask sumando los 10 primeros niveles de Kraken.</li>
+            <li><b>6 · Volatilidad:</b> ancho de Bollinger contra su mediana reciente; si es muy bajo, la fuerza total se multiplica por 0.65.</li>
+            <li><b>7 · Heatmap manual:</b> puntos extra si el precio se mueve hacia el pool que marcaste y la racha acompaña.</li>
+            <li><b>8 · Contexto:</b> funding de perpetuos (extremo = lado saturado, resta) y movimiento de ETH en 5 min como confirmación.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary>Sugerencias de backtesting</summary>
+        <div class="body">
+          <ul>
+            <li><b>Datos:</b> descarga velas históricas de 1m de BTC-USD desde la API pública de Kraken o Coinbase (sin llave, EE.UU. OK) y trades históricos si quieres reproducir el flujo de órdenes.</li>
+            <li><b>Reconstruye ventanas:</b> parte la serie en bloques de 15 min alineados al reloj (:00, :15, :30, :45); el strike es el precio de apertura de cada bloque.</li>
+            <li><b>Simula en vivo:</b> reproduce vela a vela (sin mirar el futuro), calcula las 8 señales solo con datos disponibles en ese minuto y registra la primera señal sobre el umbral entre los minutos 2 y 10.</li>
+            <li><b>Mide lo mismo que la app:</b> acierto por rango de fuerza (50–60, 60–70, 70+) y por minuto de entrada; si un rango no supera ~55–60% en varios cientos de ventanas, su peso debería bajar.</li>
+            <li><b>Costes:</b> Kalshi cobra comisión por contrato y el spread YES/NO no es cero: exige que la ventaja supere ese coste antes de operar real.</li>
+            <li><b>Validación cruzada:</b> separa un periodo final (p. ej. el último mes) que no uses para ajustar pesos; ajusta solo con el periodo anterior.</li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <footer>
+      Detector de señales — no opera ni se conecta a ninguna cuenta.<br />
+      Datos públicos de Kraken (spot) y OKX (funding). Ventanas alineadas al reloj, como KXBTC15M.
+    </footer>
+
+    <script>
+    "use strict";
+    /* =====================================================================
+       DETECTOR DE SEÑALES — Kalshi KXBTC15M ("BTC Up or Down · 15 minutos")
+       ---------------------------------------------------------------------
+       · Solo detecta y registra señales. NO opera ni conecta cuentas.
+       · Datos: Kraken spot (WebSocket + REST, sin llave, válido en EE.UU.)
+         y funding de perpetuos de OKX (REST público). Nada de Binance.com.
+       · Cada ventana de 15 min: gana "Up" si el precio al cierre >= strike
+         (strike = precio al inicio de la ventana). Por eso la señal n.º 1
+         mide la distancia al strike en unidades de ATR, no el color de la
+         vela.
+       ===================================================================== */
+
+    /* ================= CONFIG — parámetros ajustables ================= */
+    const CONFIG = {
+      WINDOW_SEC: 900,          // ventana Kalshi: 15 minutos
+      OBSERVE_MIN: 2,           // minutos 0-2: solo observar
+      SIGNAL_END_MIN: 10,       // zona principal de señales: minutos 2-10
+      NOISE_FROM_MIN: 12,       // últimos 3 min: ruido alto, evitar entrada
+                                // (minutos 10-12: transición, sin nuevas entradas)
+      EXIT_WATCH_MIN: 5,        // inversión en los primeros 5 min = alerta de salida
+      FLOW_WINDOW_SEC: 90,      // flujo de órdenes: últimos 90 s (rango pedido: 60-120)
+      BOOK_LEVELS: 10,          // niveles del order book a sumar
+      ATR_PERIOD: 14,           // ATR de velas de 1m
+      BB_PERIOD: 20, BB_K: 2,   // Bollinger Bands
+      LOW_VOL_FACTOR: 0.65,     // multiplicador de fuerza si la volatilidad es muy baja
+      HISTORY_MAX: 20           // ventanas en el historial visible
+    };
+
+    const SIGNALS = [
+      { id:"disp",    name:"1 · Desplazamiento vs strike", defWeight:3.0 },
+      { id:"mom",     name:"2 · Momentum 1m / 3m / 5m + EMA", defWeight:2.0 },
+      { id:"streak",  name:"3 · Rachas de velas 1m", defWeight:1.0 },
+      { id:"flow",    name:"4 · Flujo de órdenes (90 s)", defWeight:1.5 },
+      { id:"book",    name:"5 · Order book (10 niveles)", defWeight:1.0 },
+      { id:"vol",     name:"6 · Volatilidad (BB / ATR)", defWeight:0.5 },
+      { id:"heat",    name:"7 · Heatmap manual", defWeight:1.0 },
+      { id:"ctx",     name:"8 · Contexto (funding + ETH)", defWeight:0.5 }
+    ];
+
+    /* ================= Utilidades ================= */
+    const $ = id => document.getElementById(id);
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const fmtUSD = v => (v == null || !isFinite(v)) ? "—" :
+      "$" + v.toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 });
+    const fmtSign = (v, dec=2) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(dec);
+    const pad2 = n => String(n).padStart(2, "0");
+    const fmtClock = ts => { const d = new Date(ts*1000); return pad2(d.getHours()) + ":" + pad2(d.getMinutes()); };
+
+    // localStorage con red de seguridad (en algunos contextos puede fallar)
+    const store = {
+      get(k, fb){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch(e){ return fb; } },
+      set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+    };
+
+    /* ================= Estado global ================= */
+    const S = {
+      price: null,            // último precio BTC-USD
+      ethPrice: null, ethHist: [],   // precio ETH y muestras {t, p} para el cambio 5m
+      candles: [],            // velas 1m de Kraken (ascendentes): {t,o,h,l,c,v}
+      trades: [],             // trades recientes {t, p, q, side:'b'|'s'}
+      bids: new Map(), asks: new Map(),  // libro: precio -> cantidad
+      funding: null,          // funding rate del perpetuo BTC (OKX)
+      ws: null, wsAlive: false, reconnectMs: 1000,
+      windowStart: null, strike: null,
+      lock: null,             // señal registrada en la ventana: {dir, strength, minute, price, ts}
+      exitAlertShown: false,
+      lastAlertKey: null,     // evita repetir sonido/vibración por la misma señal
+      heatmap: "neu",         // 'up' | 'neu' | 'down' (entrada manual)
+      settings: null,
+      log: store.get("kb15_log", []),          // registros de señales validadas
+      windows: store.get("kb15_windows", [])   // últimas ventanas cerradas
+    };
+
+    /* Ajustes: umbral, pesos, sonido, vibración (persistentes) */
+    function loadSettings(){
+      const d = { threshold:55, sound:true, vibrate:true, weights:{} };
+      SIGNALS.forEach(s => d.weights[s.id] = s.defWeight);
+      const saved = store.get("kb15_settings", null);
+      S.settings = saved ? Object.assign(d, saved) : d;
+      SIGNALS.forEach(s => { if (typeof S.settings.weights[s.id] !== "number") S.settings.weights[s.id] = s.defWeight; });
+    }
+    function saveSettings(){ store.set("kb15_settings", S.settings); }
+    loadSettings();
+    S.heatmap = store.get("kb15_heatmap", "neu");
+
+    /* ================= Indicadores ================= */
+    function atr(candles, period){
+      if (candles.length < period + 1) return null;
+      let sum = 0;
+      for (let i = candles.length - period; i < candles.length; i++){
+        const c = candles[i], p = candles[i-1];
+        const tr = Math.max(c.h - c.l, Math.abs(c.h - p.c), Math.abs(c.l - p.c));
+        sum += tr;
+      }
+      return sum / period;
+    }
+    function emaSeries(values, period){
+      const k = 2 / (period + 1); let e = values[0];
+      const out = [e];
+      for (let i = 1; i < values.length; i++){ e = values[i]*k + e*(1-k); out.push(e); }
+      return out;
+    }
+    function bollingerWidth(candles){
+      // Ancho de banda como % del precio, y su mediana reciente para comparar
+      if (candles.length < CONFIG.BB_PERIOD + 5) return null;
+      const widths = [];
+      for (let end = CONFIG.BB_PERIOD; end <= candles.length; end++){
+        const slice = candles.slice(end - CONFIG.BB_PERIOD, end);
+        const mean = slice.reduce((a,c) => a + c.c, 0) / slice.length;
+        const sd = Math.sqrt(slice.reduce((a,c) => a + (c.c-mean)*(c.c-mean), 0) / slice.length);
+        widths.push((2 * CONFIG.BB_K * sd) / mean * 100);
+      }
+      const cur = widths[widths.length - 1];
+      const sorted = [...widths].sort((a,b) => a-b);
+      const median = sorted[Math.floor(sorted.length/2)];
+      return { width: cur, median, ratio: median > 0 ? cur/median : 1 };
+    }
+
+    /* ================= Las 8 señales (cada una: −100..+100) ================= */
+    function computeSignals(nowSec){
+      const out = {};
+      const cs = S.candles;
+      const closes = cs.map(c => c.c);
+      const a = atr(cs, CONFIG.ATR_PERIOD);
+      const secLeft = Math.max(1, S.windowStart + CONFIG.WINDOW_SEC - nowSec);
+      const price = S.price;
+
+      /* 1 · Desplazamiento vs strike, ajustado por el tiempo que queda:
+         el ATR esperado en lo que resta escala con √tiempo. */
+      if (price != null && S.strike != null && a){
+        const dist = price - S.strike;
+        const atrLeft = a * Math.sqrt(Math.max(secLeft, 60) / 60);
+        const z = dist / atrLeft;
+        out.disp = { score: clamp(z * 40, -100, 100),
+          detail: fmtSign(dist) + " USD · " + fmtSign(z) + " ATR restantes" };
+      } else out.disp = { score: 0, detail: "Esperando strike y ATR…" };
+
+      /* 2 · Momentum multi-plazo + pendiente EMA 9/21 */
+      if (cs.length >= 8 && a){
+        const last = closes[closes.length-1];
+        const r1 = (last - closes[closes.length-2]) / a;
+        const r3 = (last - closes[closes.length-4]) / a;
+        const r5 = (last - closes[closes.length-6]) / a;
+        const e9 = emaSeries(closes, 9), e21 = emaSeries(closes, 21);
+        const slope = (e9[e9.length-1] - e21[e21.length-1]) / a;
+        const raw = r1*0.8 + r3*0.6 + r5*0.5 + slope*1.4;
+        out.mom = { score: clamp(raw * 30, -100, 100),
+          detail: "Ret 1m " + fmtSign(r1) + " · 3m " + fmtSign(r3) + " · 5m " + fmtSign(r5) + " ATR · EMA9/21 " + fmtSign(slope) };
+      } else out.mom = { score: 0, detail: "Cargando velas…" };
+
+      /* 3 · Rachas: velas 1m consecutivas del mismo color; castiga el chop */
+      if (cs.length >= 7){
+        const closed = cs.slice(0, -1); // la última vela aún se está formando
+        let streak = 0, sgn = 0;
+        for (let i = closed.length-1; i >= 0; i--){
+          const s = Math.sign(closed[i].c - closed[i].o);
+          if (s === 0) break;
+          if (sgn === 0){ sgn = s; streak = 1; }
+          else if (s === sgn) streak++;
+          else break;
+        }
+        let flips = 0;
+        for (let i = closed.length-6; i < closed.length-1; i++){
+          if (Math.sign(closed[i+1].c-closed[i+1].o) !== Math.sign(closed[i].c-closed[i].o)) flips++;
+        }
+        let score = sgn * Math.min(streak, 5) * 17;
+        let note = streak + " vela(s) " + (sgn > 0 ? "verdes" : sgn < 0 ? "rojas" : "—") + " seguidas";
+        if (flips >= 4){ score *= 0.3; note += " · mercado choppy (alternado), señal castigada"; }
+        out.streak = { score: clamp(score, -100, 100), detail: note, streakSign: sgn, streakLen: streak };
+      } else out.streak = { score: 0, detail: "Cargando velas…", streakSign: 0, streakLen: 0 };
+
+      /* 4 · Flujo de órdenes: desequilibrio de volumen comprador/vendedor */
+      {
+        const cut = nowSec - CONFIG.FLOW_WINDOW_SEC;
+        let buy = 0, sell = 0;
+        for (const t of S.trades){ if (t.t >= cut){ if (t.side === "b") buy += t.q; else sell += t.q; } }
+        const tot = buy + sell;
+        if (tot > 0){
+          const imb = (buy - sell) / tot * 100;
+          out.flow = { score: clamp(imb, -100, 100),
+            detail: "Compras " + (buy/tot*100).toFixed(0) + "% · ventas " + (sell/tot*100).toFixed(0) + "% del volumen (" + CONFIG.FLOW_WINDOW_SEC + " s)" };
+        } else out.flow = { score: 0, detail: "Sin trades recientes todavía…" };
+      }
+
+      /* 5 · Order book: desequilibrio en los 10 primeros niveles */
+      {
+        const top = (map, desc) => [...map.entries()].sort((x,y) => desc ? y[0]-x[0] : x[0]-y[0])
+          .slice(0, CONFIG.BOOK_LEVELS).reduce((acc, [,q]) => acc + q, 0);
+        const bq = top(S.bids, true), aq = top(S.asks, false);
+        if (bq + aq > 0){
+          const imb = (bq - aq) / (bq + aq) * 100;
+          out.book = { score: clamp(imb, -100, 100),
+            detail: "Bids " + bq.toFixed(2) + " BTC · asks " + aq.toFixed(2) + " BTC (10 niveles)" };
+        } else out.book = { score: 0, detail: "Cargando libro…" };
+      }
+
+      /* 6 · Volatilidad: ancho de Bollinger vs su mediana. Sin dirección propia:
+         amplifica la dirección del desplazamiento si la vol acompaña; si la
+         vol es muy baja, marca lowVol y la fuerza total se reduce. */
+      {
+        const bb = bollingerWidth(cs);
+        if (bb && S.strike != null && price != null){
+          const dirSgn = Math.sign(price - S.strike);
+          const score = dirSgn * clamp((bb.ratio - 0.7) * 70, -60, 100);
+          out.vol = { score: clamp(score, -100, 100), lowVol: bb.ratio < 0.6,
+            detail: "BB width " + bb.width.toFixed(2) + "% · " + (bb.ratio*100).toFixed(0) + "% de su mediana" + (bb.ratio < 0.6 ? " · vol muy baja: confianza reducida" : "") };
+        } else out.vol = { score: 0, lowVol: false, detail: "Cargando velas…" };
+      }
+
+      /* 7 · Heatmap manual: puntos si el precio se mueve hacia el pool
+         marcado y la racha acompaña en la misma dirección. */
+      {
+        if (S.heatmap === "neu" || price == null || S.strike == null){
+          out.heat = { score: 0, detail: S.heatmap === "neu" ? "Heatmap en neutral" : "Esperando precio…" };
+        } else {
+          const want = S.heatmap === "up" ? 1 : -1;
+          const moving = Math.sign(price - S.strike) === want;
+          let score = moving ? 40 : -15;
+          let note = moving ? "El precio se mueve hacia el pool " + (want > 0 ? "de arriba" : "de abajo") : "El precio no se mueve hacia el pool marcado";
+          if (out.streak && out.streak.streakSign === want && out.streak.streakLen >= 2){
+            score += 30; note += " · la racha acompaña (+30)";
+          }
+          out.heat = { score: clamp(score, -100, 100), detail: note };
+        }
+      }
+
+      /* 8 · Contexto: funding (extremo = saturación, resta) + ETH 5m */
+      {
+        let parts = [], score = 0, n = 0;
+        if (S.funding != null){
+          const f = S.funding; // p. ej. 0.0001 = 0.01%
+          let fs = 0;
+          if (f > 0.0003) fs = -25; else if (f < -0.0003) fs = 25; else fs = -f * 40000;
+          score += fs; n++;
+          parts.push("funding " + (f*100).toFixed(3) + "%" + (Math.abs(f) > 0.0003 ? " (lado saturado)" : ""));
+        }
+        const ethRet = ethChange5m(nowSec);
+        if (ethRet != null){
+          score += clamp(ethRet * 2200, -70, 70); n++;
+          parts.push("ETH 5m " + fmtSign(ethRet * 100) + "%");
+        }
+        out.ctx = { score: n ? clamp(score / n * (n === 2 ? 1.4 : 1), -100, 100) : 0,
+          detail: parts.length ? parts.join(" · ") : "Sin datos de contexto todavía…" };
+      }
+
+      return out;
+    }
+
+    function ethChange5m(nowSec){
+      if (S.ethPrice == null) return null;
+      const target = nowSec - 300;
+      let old = null;
+      for (const s of S.ethHist){ if (s.t <= target) old = s.p; else break; }
+      if (old == null || old === 0) return null;
+      return S.ethPrice / old - 1;
+    }
+
+    /* ================= Datos: Kraken REST (velas) ================= */
+    async function fetchCandles(){
+      try {
+        const r = await fetch("https://api.kraken.com/0/public/OHLC?pair=XBTUSD&interval=1");
+        const j = await r.json();
+        const key = Object.keys(j.result).find(k => k !== "last");
+        const rows = j.result[key];
+        S.candles = rows.map(x => ({ t:+x[0], o:+x[1], h:+x[2], l:+x[3], c:+x[4], v:+x[6] }));
+      } catch(e){ /* se reintenta en el siguiente ciclo */ }
+    }
+
+    /* Funding del perpetuo BTC: OKX público; si falla, Kraken Futures */
+    async function fetchFunding(){
+      try {
+        const r = await fetch("https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP");
+        const j = await r.json();
+        if (j.data && j.data[0]){ S.funding = parseFloat(j.data[0].fundingRate); return; }
+        throw new Error("sin datos");
+      } catch(e){
+        try {
+          const r2 = await fetch("https://futures.kraken.com/derivatives/api/v3/tickers");
+          const j2 = await r2.json();
+          const t = (j2.tickers || []).find(x => x.symbol === "PF_XBTUSD");
+          if (t && t.fundingRate != null) S.funding = parseFloat(t.fundingRate);
+        } catch(e2){ /* el contexto es opcional */ }
+      }
+    }
+
+    /* ================= Datos: Kraken WebSocket ================= */
+    function setConn(state, text){
+      const d = $("connDot");
+      d.className = "dot" + (state === "live" ? " live" : state === "warn" ? " warn" : "");
+      $("connText").textContent = text;
+    }
+    function connectWS(){
+      try { S.ws = new WebSocket("wss://ws.kraken.com"); } catch(e){ scheduleReconnect(); return; }
+      const ws = S.ws;
+      ws.onopen = () => {
+        S.wsAlive = true; S.reconnectMs = 1000;
+        setConn("live", "En vivo · Kraken");
+        ws.send(JSON.stringify({ event:"subscribe", pair:["XBT/USD"], subscription:{ name:"ticker" } }));
+        ws.send(JSON.stringify({ event:"subscribe", pair:["XBT/USD"], subscription:{ name:"trade" } }));
+        ws.send(JSON.stringify({ event:"subscribe", pair:["XBT/USD"], subscription:{ name:"book", depth: CONFIG.BOOK_LEVELS } }));
+        ws.send(JSON.stringify({ event:"subscribe", pair:["ETH/USD"], subscription:{ name:"ticker" } }));
+      };
+      ws.onmessage = ev => {
+        let m; try { m = JSON.parse(ev.data); } catch(e){ return; }
+        if (!Array.isArray(m)) return; // eventos de sistema / suscripción
+        const payload = m[1], chan = m[2], pair = m[3];
+        if (chan === "ticker" && payload && payload.c){
+          const p = parseFloat(payload.c[0]);
+          if (pair === "XBT/USD"){ S.price = p; onPrice(p); }
+          else if (pair === "ETH/USD"){
+            S.ethPrice = p;
+            const now = Date.now()/1000;
+            if (!S.ethHist.length || now - S.ethHist[S.ethHist.length-1].t >= 5){
+              S.ethHist.push({ t: now, p });
+              while (S.ethHist.length && S.ethHist[0].t < now - 420) S.ethHist.shift();
+            }
+          }
+        } else if (chan === "trade" && Array.isArray(payload)){
+          const now = Date.now()/1000;
+          for (const tr of payload){
+            // Kraken: [precio, volumen, tiempo, lado del taker ('b' compra / 's' venta), tipo, misc]
+            S.trades.push({ t: parseFloat(tr[2]), p: parseFloat(tr[0]), q: parseFloat(tr[1]), side: tr[3] });
+          }
+          while (S.trades.length && S.trades[0].t < now - CONFIG.FLOW_WINDOW_SEC - 30) S.trades.shift();
+        } else if (chan && chan.indexOf("book") === 0){
+          applyBook(payload);
+        }
+      };
+      ws.onclose = () => { S.wsAlive = false; setConn("warn", "Reconectando…"); scheduleReconnect(); };
+      ws.onerror = () => { try { ws.close(); } catch(e){} };
+    }
+    function scheduleReconnect(){
+      setTimeout(connectWS, S.reconnectMs);
+      S.reconnectMs = Math.min(S.reconnectMs * 2, 15000);
+    }
+    function applyBook(payload){
+      if (!payload) return;
+      const load = (arr, map, isSnap) => {
+        if (!arr) return;
+        for (const lvl of arr){
+          const p = parseFloat(lvl[0]), q = parseFloat(lvl[1]);
+          if (q === 0) map.delete(p); else map.set(p, q);
+        }
+      };
+      // Snapshot: claves "bids"/"asks"; actualizaciones: "b"/"a"
+      load(payload.bids || payload.b, S.bids, !!payload.bids);
+      load(payload.asks || payload.a, S.asks, !!payload.asks);
+      // Recorta el libro a los niveles cercanos para no crecer sin límite
+      if (S.bids.size > 60){ const ks = [...S.bids.keys()].sort((a,b)=>b-a); ks.slice(40).forEach(k=>S.bids.delete(k)); }
+      if (S.asks.size > 60){ const ks = [...S.asks.keys()].sort((a,b)=>a-b); ks.slice(40).forEach(k=>S.asks.delete(k)); }
+    }
+
+    /* Mantiene la vela de 1m en curso con el precio en vivo */
+    function onPrice(p){
+      const now = Math.floor(Date.now()/1000);
+      const t = now - (now % 60);
+      const last = S.candles[S.candles.length-1];
+      if (last && last.t === t){
+        last.c = p; last.h = Math.max(last.h, p); last.l = Math.min(last.l, p);
+      } else if (last && t > last.t){
+        S.candles.push({ t, o: last.c, h: Math.max(last.c, p), l: Math.min(last.c, p), c: p, v: 0 });
+        if (S.candles.length > 400) S.candles.splice(0, S.candles.length - 400);
+      }
+    }
+
+    /* ================= Ventanas de 15 minutos ================= */
+    function currentWindowStart(nowSec){ return Math.floor(nowSec / CONFIG.WINDOW_SEC) * CONFIG.WINDOW_SEC; }
+
+    function initWindow(nowSec){
+      S.windowStart = currentWindowStart(nowSec);
+      S.lock = null; S.exitAlertShown = false; S.lastAlertKey = null;
+      // Strike: apertura de la vela de 1m del inicio de ventana; si aún no
+      // está disponible, el primer precio visto en la ventana (y se guarda
+      // para sobrevivir a una recarga a mitad de ventana).
+      const saved = store.get("kb15_curwin", null);
+      if (saved && saved.start === S.windowStart && saved.strike){
+        S.strike = saved.strike;
+      } else {
+        const c = S.candles.find(x => x.t === S.windowStart);
+        S.strike = c ? c.o : S.price;
+        if (S.strike) store.set("kb15_curwin", { start: S.windowStart, strike: S.strike });
+      }
+    }
+
+    function closeWindow(){
+      if (S.windowStart == null || S.strike == null || S.price == null) return;
+      const result = S.price >= S.strike ? "up" : "down"; // Up gana si cierra >= strike
+      const rec = { start: S.windowStart, strike: S.strike, close: S.price, result,
+                    signal: S.lock ? { dir: S.lock.dir, strength: S.lock.strength, minute: S.lock.minute } : null };
+      rec.hit = rec.signal ? (rec.signal.dir === result) : null;
+      S.windows.unshift(rec);
+      S.windows = S.windows.slice(0, CONFIG.HISTORY_MAX);
+      store.set("kb15_windows", S.windows);
+      if (S.lock){
+        S.log.unshift({ ts: S.lock.ts, windowStart: S.windowStart, dir: S.lock.dir,
+          strength: S.lock.strength, minute: S.lock.minute, entryPrice: S.lock.price,
+          strike: S.strike, close: S.price, result, hit: rec.hit });
+        if (S.log.length > 500) S.log = S.log.slice(0, 500);
+        store.set("kb15_log", S.log);
+      }
+      renderHistory(); renderStats();
+    }
+
+    /* ================= Sonido y vibración ================= */
+    let audioCtx = null;
+    function beep(){
+      if (!S.settings.sound) return;
+      try {
+        audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const t0 = audioCtx.currentTime;
+        [880, 1318].forEach((f, i) => {
+          const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+          o.type = "sine"; o.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, t0 + i*0.16);
+          g.gain.exponentialRampToValueAtTime(0.25, t0 + i*0.16 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + i*0.16 + 0.15);
+          o.connect(g); g.connect(audioCtx.destination);
+          o.start(t0 + i*0.16); o.stop(t0 + i*0.16 + 0.16);
+        });
+      } catch(e){}
+    }
+    function buzz(){ if (S.settings.vibrate && navigator.vibrate){ try { navigator.vibrate([120, 60, 120]); } catch(e){} } }
+
+    /* ================= Render ================= */
+    function buildBreakdown(){
+      const box = $("breakdown"); box.innerHTML = "";
+      for (const s of SIGNALS){
+        const row = document.createElement("div"); row.className = "sig-row";
+        row.innerHTML =
+          '<div class="sig-top"><span class="sig-name">' + s.name + '</span>' +
+          '<span class="sig-val num" id="sv-' + s.id + '">0</span></div>' +
+          '<div class="sig-bar"><div class="zero"></div><div class="fill" id="sb-' + s.id + '"></div></div>' +
+          '<div class="sig-detail" id="sd-' + s.id + '">—</div>';
+        box.appendChild(row);
+      }
+    }
+    function renderSignals(sig){
+      for (const s of SIGNALS){
+        const r = sig[s.id]; if (!r) continue;
+        const v = Math.round(r.score);
+        const val = $("sv-" + s.id), bar = $("sb-" + s.id), det = $("sd-" + s.id);
+        val.textContent = (v > 0 ? "+" : "") + v;
+        val.className = "sig-val num " + (v > 3 ? "pos" : v < -3 ? "neg" : "");
+        const w = Math.abs(v) / 2; // % del semiancho de la barra
+        bar.style.width = w + "%";
+        bar.style.left = v >= 0 ? "50%" : (50 - w) + "%";
+        bar.className = "fill " + (v > 3 ? "p" : v < -3 ? "n" : "");
+        det.textContent = r.detail || "";
+      }
+    }
+    function renderHistory(){
+      const box = $("historyList");
+      if (!S.windows.length){
+        box.innerHTML = '<div class="empty">Todavía no se cierra ninguna ventana con la app abierta. El historial se va llenando ventana a ventana.</div>';
+        return;
+      }
+      box.innerHTML = "";
+      for (const w of S.windows){
+        const row = document.createElement("div"); row.className = "hist-row";
+        const sig = w.signal
+          ? '<span class="badge ' + w.signal.dir + '">' + (w.signal.dir === "up" ? "▲ UP" : "▼ DOWN") + " " + Math.round(w.signal.strength) + "</span>"
+          : '<span class="badge none">sin señal</span>';
+        const res = '<span class="badge ' + w.result + '">' + (w.result === "up" ? "▲ UP" : "▼ DOWN") + "</span>";
+        const hit = w.hit == null ? '<span class="hit na">—</span>'
+          : w.hit ? '<span class="hit ok">✓ acierto</span>' : '<span class="hit bad">✗ fallo</span>';
+        row.innerHTML = '<span class="hist-time num">' + fmtClock(w.start) + "–" + fmtClock(w.start + CONFIG.WINDOW_SEC) + "</span>" +
+          "<span>Señal " + sig + "</span><span>→ " + res + "</span>" + hit;
+        box.appendChild(row);
+      }
+    }
+    function statsTable(rows, firstCol){
+      if (!rows.length) return '<div class="empty">Sin registros todavía.</div>';
+      let h = '<table class="stats"><tr><th>' + firstCol + '</th><th>Señales</th><th>Aciertos</th><th>Acierto</th></tr>';
+      for (const r of rows){
+        h += "<tr><td>" + r.label + '</td><td class="num">' + r.n + '</td><td class="num">' + r.hits +
+             '</td><td class="num">' + (r.n ? (r.hits/r.n*100).toFixed(0) + "%" : "—") + "</td></tr>";
+      }
+      return h + "</table>";
+    }
+    function renderStats(){
+      $("logCount").textContent = S.log.length;
+      const bands = [["50–60", s => s >= 50 && s < 60], ["60–70", s => s >= 60 && s < 70], ["70+", s => s >= 70]];
+      const bandRows = bands.map(([label, f]) => {
+        const sel = S.log.filter(x => f(x.strength));
+        return { label: "Fuerza " + label, n: sel.length, hits: sel.filter(x => x.hit).length };
+      }).filter(r => r.n > 0);
+      const byMin = {};
+      for (const x of S.log){ (byMin[x.minute] = byMin[x.minute] || []).push(x); }
+      const minRows = Object.keys(byMin).sort((a,b) => a-b).map(m => ({
+        label: "Minuto " + m, n: byMin[m].length, hits: byMin[m].filter(x => x.hit).length
+      }));
+      $("statsBands").innerHTML = "<h3 style='font-size:15px;margin:0 0 6px;'>Por rango de fuerza</h3>" +
+        (bandRows.length ? statsTable(bandRows, "Rango") : '<div class="empty">Sin registros todavía: deja la app abierta y las señales se irán registrando solas.</div>');
+      $("statsMinutes").innerHTML = "<h3 style='font-size:15px;margin:0 0 6px;'>Por minuto de entrada</h3>" +
+        (minRows.length ? statsTable(minRows, "Entrada") : '<div class="empty">—</div>');
+    }
+
+    /* ================= Bucle principal (1 s) ================= */
+    function tick(){
+      const nowSec = Date.now()/1000;
+      const now = Math.floor(nowSec);
+
+      // Reloj y cambio de ventana
+      $("clockNow").textContent = new Date().toLocaleTimeString("es-ES");
+      if (S.windowStart == null) initWindow(now);
+      else if (now >= S.windowStart + CONFIG.WINDOW_SEC){ closeWindow(); initWindow(now); }
+      if (S.strike == null && S.price != null){
+        const c = S.candles.find(x => x.t === S.windowStart);
+        S.strike = c ? c.o : S.price;
+        if (S.strike) store.set("kb15_curwin", { start: S.windowStart, strike: S.strike });
+      }
+
+      const elapsed = now - S.windowStart;
+      const secLeft = CONFIG.WINDOW_SEC - elapsed;
+      const minute = Math.floor(elapsed / 60);
+      $("winTimer").textContent = pad2(Math.floor(secLeft/60)) + ":" + pad2(secLeft % 60);
+      $("winRange").textContent = fmtClock(S.windowStart) + " – " + fmtClock(S.windowStart + CONFIG.WINDOW_SEC);
+      $("winProgress").style.width = (elapsed / CONFIG.WINDOW_SEC * 100).toFixed(1) + "%";
+
+      // Fase según las reglas de tiempo
+      const phaseEl = $("winPhase");
+      let phase, phaseClass;
+      if (minute < CONFIG.OBSERVE_MIN){ phase = "👀 Minutos 0–2 · solo observar, sin señal"; phaseClass = ""; }
+      else if (minute < CONFIG.SIGNAL_END_MIN){ phase = "🟢 Zona principal de señales (min 2–10)"; phaseClass = "main"; }
+      else if (minute < CONFIG.NOISE_FROM_MIN){ phase = "🟡 Minutos 10–12 · transición, sin nuevas entradas"; phaseClass = ""; }
+      else { phase = "⚠️ Últimos 3 min · ruido alto, evitar entrada"; phaseClass = "noise"; }
+      phaseEl.textContent = phase; phaseEl.className = "phase " + phaseClass;
+
+      // Precio, strike y distancia
+      $("priceNow").textContent = fmtUSD(S.price);
+      $("strikeVal").textContent = fmtUSD(S.strike);
+      const a = atr(S.candles, CONFIG.ATR_PERIOD);
+      if (S.price != null && S.strike != null){
+        const d = S.price - S.strike;
+        const el = $("distVal");
+        el.textContent = fmtSign(d) + " USD (" + fmtSign(d / S.strike * 100) + "%)";
+        el.className = "val num " + (d >= 0 ? "pos" : "neg");
+        $("distAtr").textContent = a ? fmtSign(d / a) + " ATR" : "—";
+      }
+      const bb = bollingerWidth(S.candles);
+      $("volVal").textContent = (a ? "$" + a.toFixed(0) : "—") + " · " + (bb ? bb.width.toFixed(2) + "%" : "—");
+
+      // Señales y fuerza total ponderada
+      const sig = computeSignals(nowSec);
+      renderSignals(sig);
+      let num = 0, den = 0;
+      for (const s of SIGNALS){ const w = S.settings.weights[s.id]; num += w * sig[s.id].score; den += w; }
+      let total = den ? num / den : 0;
+      if (sig.vol && sig.vol.lowVol) total *= CONFIG.LOW_VOL_FACTOR;
+      const strength = clamp(Math.abs(total), 0, 100);
+      const dir = total > 0 ? "up" : total < 0 ? "down" : "neu";
+      const thr = S.settings.threshold;
+      const inZone = minute >= CONFIG.OBSERVE_MIN && minute < CONFIG.SIGNAL_END_MIN;
+      const qualified = inZone && strength >= thr && dir !== "neu";
+
+      // Medidor
+      const arrow = $("dirArrow"), label = $("dirLabel"), fill = $("strengthFill");
+      $("strengthNum").textContent = Math.round(strength);
+      $("thrEcho").textContent = thr;
+      $("thrMark").style.left = thr + "%";
+      fill.style.width = strength + "%";
+      if (qualified){
+        arrow.textContent = dir === "up" ? "▲" : "▼";
+        arrow.className = "arrow " + dir;
+        label.textContent = dir === "up" ? "UP" : "DOWN";
+        fill.className = dir;
+        $("signalNote").textContent = S.lock
+          ? "Señal registrada al minuto " + S.lock.minute + " con fuerza " + Math.round(S.lock.strength) + ". Se validará al cerrar la ventana."
+          : "Señal fuerte: supera el umbral.";
+      } else {
+        arrow.textContent = "●"; arrow.className = "arrow neu";
+        label.textContent = "NEUTRAL";
+        fill.className = "";
+        $("signalNote").textContent =
+          minute < CONFIG.OBSERVE_MIN ? "Fase de observación: aún no se emiten señales." :
+          minute >= CONFIG.NOISE_FROM_MIN ? "Últimos 3 minutos: ruido alto, no entrar." :
+          minute >= CONFIG.SIGNAL_END_MIN ? "Zona de transición (min 10–12): no se registran nuevas entradas." :
+          strength < thr ? "Fuerza bajo el umbral (" + thr + "): sin señal." : "Sin dirección clara.";
+      }
+
+      // Registro de la primera señal válida de la ventana + aviso
+      if (qualified && !S.lock){
+        S.lock = { dir, strength, minute, price: S.price, ts: Date.now() };
+        const key = S.windowStart + "-" + dir;
+        if (S.lastAlertKey !== key){ S.lastAlertKey = key; beep(); buzz(); }
+      }
+
+      // Alerta de salida: inversión dentro de los primeros 5 minutos
+      const exitEl = $("exitAlert");
+      if (S.lock && minute < CONFIG.EXIT_WATCH_MIN && dir !== "neu" && dir !== S.lock.dir && strength >= thr){
+        exitEl.classList.add("show");
+        if (!S.exitAlertShown){ S.exitAlertShown = true; beep(); buzz(); }
+      } else exitEl.classList.remove("show");
+
+      // Contexto visible
+      $("ctxFunding").textContent = S.funding != null ? (S.funding*100).toFixed(3) + "%" : "—";
+      const er = ethChange5m(nowSec);
+      $("ctxEth").textContent = er != null ? fmtSign(er*100) + "%" : "—";
+    }
+
+    /* ================= Controles ================= */
+    function buildSettings(){
+      $("thrRange").value = S.settings.threshold;
+      $("thrOut").textContent = S.settings.threshold;
+      $("thrRange").addEventListener("input", e => {
+        S.settings.threshold = +e.target.value; $("thrOut").textContent = e.target.value; saveSettings();
+      });
+      const box = $("weightCtls"); box.innerHTML = "";
+      for (const s of SIGNALS){
+        const div = document.createElement("div"); div.className = "ctl";
+        div.innerHTML = "<label>Peso · " + s.name + ' <output id="wo-' + s.id + '">' + S.settings.weights[s.id].toFixed(1) + "</output></label>";
+        const r = document.createElement("input");
+        r.type = "range"; r.min = "0"; r.max = "3"; r.step = "0.1"; r.value = S.settings.weights[s.id];
+        r.addEventListener("input", () => {
+          S.settings.weights[s.id] = +r.value;
+          $("wo-" + s.id).textContent = (+r.value).toFixed(1);
+          saveSettings();
+        });
+        div.appendChild(r); box.appendChild(div);
+      }
+      $("sndTgl").checked = S.settings.sound;
+      $("vibTgl").checked = S.settings.vibrate;
+      $("sndTgl").addEventListener("change", e => { S.settings.sound = e.target.checked; saveSettings(); });
+      $("vibTgl").addEventListener("change", e => { S.settings.vibrate = e.target.checked; saveSettings(); });
+      $("testAlert").addEventListener("click", () => { beep(); buzz(); });
+    }
+    function setHeatmap(v){
+      S.heatmap = v; store.set("kb15_heatmap", v);
+      $("hmUp").className = v === "up" ? "on-up" : "";
+      $("hmNeu").className = v === "neu" ? "on-neu" : "";
+      $("hmDown").className = v === "down" ? "on-down" : "";
+    }
+    $("hmUp").addEventListener("click", () => setHeatmap("up"));
+    $("hmNeu").addEventListener("click", () => setHeatmap("neu"));
+    $("hmDown").addEventListener("click", () => setHeatmap("down"));
+
+    $("exportCsv").addEventListener("click", () => {
+      const head = "fecha_iso,ventana_inicio,direccion,fuerza,minuto_entrada,precio_entrada,strike,precio_cierre,resultado,acierto\n";
+      const lines = S.log.map(x => [
+        new Date(x.ts).toISOString(), fmtClock(x.windowStart), x.dir, Math.round(x.strength), x.minute,
+        x.entryPrice, x.strike, x.close, x.result, x.hit ? 1 : 0
+      ].join(","));
+      const blob = new Blob([head + lines.join("\n")], { type: "text/csv" });
+      const aEl = document.createElement("a");
+      aEl.href = URL.createObjectURL(blob);
+      aEl.download = "detector-kalshi-btc15m-registro.csv";
+      aEl.click();
+      setTimeout(() => URL.revokeObjectURL(aEl.href), 4000);
+    });
+    $("clearLog").addEventListener("click", () => {
+      S.log = []; S.windows = [];
+      store.set("kb15_log", []); store.set("kb15_windows", []);
+      renderHistory(); renderStats();
+    });
+
+    /* ================= Arranque ================= */
+    buildBreakdown();
+    buildSettings();
+    setHeatmap(S.heatmap);
+    renderHistory();
+    renderStats();
+    fetchCandles().then(() => tick());
+    connectWS();
+    setInterval(tick, 1000);            // recálculo de señales cada segundo
+    setInterval(fetchCandles, 30000);   // refresco de velas cerradas
+    setInterval(fetchFunding, 120000);  // funding cada 2 min
+    fetchFunding();
+    </script>
+  </body>
+</html>
